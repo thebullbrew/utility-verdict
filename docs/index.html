@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Utility Verdict — Include, Split, or Tenant Pays?</title>
+<meta name="description" content="Judge who should pay the utilities: landlord included, RUBS split, or tenant pays — priced honestly.">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/icon-32.png"><link rel="apple-touch-icon" href="icons/icon-180.png">
+<style>
+:root{--bg:#0A0E18;--surface:#111828;--text:#EDEFF2;--accent:#C8A951;--accent2:#4A5A7A;--muted:#9aa3b2;--line:#26314a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Georgia,serif;line-height:1.5}
+header{padding:28px 18px 10px;text-align:center;border-bottom:1px solid var(--line)}
+.eyebrow{letter-spacing:.25em;text-transform:uppercase;color:var(--accent);font-size:.72rem}
+h1{font-size:2.2rem;margin:.3em 0}h2{color:var(--accent);font-size:1.15rem;letter-spacing:.04em}
+.sub{color:var(--muted);max-width:640px;margin:0 auto}
+main{max-width:980px;margin:0 auto;padding:18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-top:2px solid var(--accent);padding:16px;border-radius:4px}
+label{display:block;font-size:.85rem;color:var(--muted);margin:10px 0 4px}
+input,select{width:100%;padding:10px;background:#0d1322;color:var(--text);border:1px solid var(--line);border-radius:2px;font-size:1rem}
+button{background:var(--accent);color:#0A0E18;border:0;padding:12px 18px;font-weight:700;cursor:pointer;border-radius:2px;width:100%;margin-top:14px}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.big{font-size:2rem;color:var(--accent);font-weight:700}
+.seal{display:inline-block;border:2px solid var(--accent);border-radius:50%;width:128px;height:128px;line-height:1.2;text-align:center;padding-top:38px;font-weight:700;color:var(--accent);transform:rotate(-6deg)}
+table{width:100%;border-collapse:collapse;font-size:.9rem}td,th{border-bottom:1px solid var(--line);padding:7px;text-align:right}td:first-child,th:first-child{text-align:left}
+.bar{height:14px;background:#0d1322;display:flex;overflow:hidden;border:1px solid var(--line)}.bar div{height:100%}
+.small{font-size:.85rem;color:var(--muted)} .row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}
+textarea{width:100%;min-height:90px;background:#0d1322;color:var(--text);border:1px solid var(--line)}
+</style></head><body>
+<header><div class="eyebrow">✦ Midnight Cartographer · Daily Tool ✦</div><h1>The Utility Verdict</h1><p class="sub">“Utilities included” sounds generous — until the meter runs all winter. Price all three roads honestly: include it, split it (RUBS), or put it in the tenant's name.</p></header>
+<main>
+<div class="grid">
+<section class="card"><h2>✦ The Property</h2>
+<label>Monthly rent per unit ($)</label><input id="rent" type="number" value="1650">
+<label>Number of units</label><input id="units" type="number" value="4">
+<label>Total monthly utilities — water + electric + gas + trash ($)</label><input id="utils" type="number" value="920">
+<label>Seasonal spike — worst month extra (%)</label><input id="spike" type="number" value="35">
+<label>Rent premium you can charge if utilities included ($/unit/mo)</label><input id="premium" type="number" value="110">
+<label>Extra vacant days/yr if tenant-pays (harder to rent)</label><input id="vacDays" type="number" value="6">
+<label>RUBS / billing admin cost ($/unit/mo)</label><input id="admin" type="number" value="12">
+<label>Your admin hours per month if you bill it (all units)</label><input id="hours" type="number" value="2">
+<label>Your time value ($/hr)</label><input id="rate" type="number" value="50">
+<label>Unpaid / disputed utility share if you bill it (%)</label><input id="bad" type="number" value="4">
+<label>Turnover cost per unit ($)</label><input id="turnover" type="number" value="1800">
+<label>Extra months a tenant stays if utilities included</label><input id="stay" type="number" value="3">
+<button onclick="calc()">Render the Verdict</button>
+<div class="row"><button class="ghost" onclick="preset(0)">Small Duplex</button><button class="ghost" onclick="preset(1)">Student 4-Plex</button><button class="ghost" onclick="preset(2)">Family Single</button></div>
+</section>
+<section class="card"><h2>✦ The Verdict</h2><div style="text-align:center"><div class="seal" id="seal">—</div></div>
+<p id="verdictText">Enter your numbers and render the verdict.</p>
+<div class="big" id="bestGap">—</div><p class="small" id="bestLabel">Best path vs worst path, per year</p>
+<h2>Money anatomy — annual, all units</h2>
+<div class="bar"><div id="b1" style="background:#C8A951"></div><div id="b2" style="background:#4A5A7A"></div><div id="b3" style="background:#8a2e2e"></div></div>
+<p class="small">Gold: utility cost recovered · Slate: admin/time cost · Red: leakage (bad debt + vacancy)</p>
+<div id="ledger"></div>
+</section></div>
+<section class="card" style="margin-top:16px"><h2>✦ The Three Roads, Side by Side</h2><div id="tableWrap"></div>
+<h2>Sensitivity — premium needed</h2><div id="sens"></div>
+<h2>Save &amp; share</h2>
+<div class="row"><input id="saveName" placeholder="Name this property" style="flex:2"><button onclick="saveCase()" style="flex:1">Save</button><button class="ghost" onclick="copySummary()" style="flex:1">Copy summary</button></div>
+<div id="saved" class="small"></div><textarea id="summary" readonly></textarea>
+<p class="small">Method: Include = premium × units × 12 − utilities × 12 (with spike averaged) − turnover saved from longer stays. RUBS = utilities recovered minus admin, your time, and bad debt. Tenant-pays = no utility cost, minus extra vacancy rent lost. Spike is averaged at one-third weight — three hard months, not twelve. No API, no tracking; everything stays in your browser.</p>
+</section>
+</main><script>
+const $=id=>document.getElementById(id); const fmt=n=>'$'+Math.round(n).toLocaleString();
+function vals(){return{rent:+$('rent').value||0,units:+$('units').value||1,utils:+$('utils').value||0,spike:+$('spike').value||0,premium:+$('premium').value||0,vacDays:+$('vacDays').value||0,admin:+$('admin').value||0,hours:+$('hours').value||0,rate:+$('rate').value||0,bad:+$('bad').value||0,turnover:+$('turnover').value||0,stay:+$('stay').value||0}}
+function calc(){const v=vals();const annualUtils=v.utils*12*(1+v.spike/100/3);
+ const incRev=v.premium*v.units*12; const turnSaved=(v.stay/12)*v.turnover*v.units/3; const includeNet=incRev-annualUtils+turnSaved;
+ const rubsRec=annualUtils*(1-v.bad/100); const rubsCost=v.admin*v.units*12+v.hours*v.rate*12; const rubsNet=rubsRec-annualUtils-rubsCost+annualUtils-annualUtils; // net vs paying yourself: recovered - costs - unrecovered
+ const rubsTrue=rubsRec-rubsCost-annualUtils+ (annualUtils); // simplify below
+ // Cleaner: profit relative to landlord paying utilities with no recovery (= -annualUtils baseline is common) — report absolute net contribution:
+ const includeAbs=incRev-annualUtils+turnSaved;
+ const rubsAbs=rubsRec-annualUtils-rubsCost+annualUtils-annualUtils; // = recovered - annual - costs? fix:
+ const rubsAbs2=(annualUtils*(v.bad/100))*-1 - rubsCost; // RUBS: tenants reimburse all but bad%; landlord net = -bad% - costs (utilities pass through)
+ const tenantAbs=-(v.vacDays/365)*v.rent*v.units*12/12*12/12 - (v.vacDays*v.rent/30)*v.units; // vacancy loss approx: vacDays per unit per year * daily rent * units
+ const tenantAbsClean=-(v.vacDays*(v.rent/30))*v.units;
+ const paths=[['INCLUDE & PRICE IT',includeAbs],['SPLIT IT (RUBS)',rubsAbs2],['TENANT PAYS',tenantAbsClean]];
+ paths.sort((a,b)=>b[1]-a[1]); const best=paths[0], worst=paths[2]; const gap=best[1]-worst[1];
+ let seal,txt;
+ if(gap<600){seal='CLOSE CALL';txt='The three roads land within a few hundred dollars. Decide on hassle, not math — tenant-pays is the cleanest life.'}
+ else if(best[0].includes('INCLUDE')){seal='INCLUDE & PRICE IT';txt='The premium more than covers the meter, and longer stays save real turnover money. Include it — but price the premium, never gift it.'}
+ else if(best[0].includes('SPLIT')){seal='SPLIT IT';txt='RUBS wins: tenants reimburse the meter while you keep rent headline-clean. Just respect the admin — sloppy billing eats the win.'}
+ else {seal='TENANT PAYS';txt='Put it in their name. The premium tenants will pay does not cover the meter plus the risk, and vacancy cost is cheaper than a winter spike.'}
+ $('seal').textContent=seal; $('verdictText').textContent=txt; $('bestGap').textContent=fmt(gap)+' / yr'; $('bestLabel').textContent=best[0]+' beats '+worst[0]+' by this much per year';
+ const tot=Math.max(1,annualUtils); $('b1').style.width=Math.min(100,Math.abs(rubsRec)/tot*100)+'%'; $('b2').style.width=Math.min(100,rubsCost/tot*100)+'%'; $('b3').style.width=Math.min(100,(annualUtils*v.bad/100+Math.abs(tenantAbsClean))/tot*100)+'%';
+ $('ledger').innerHTML='<p>Annual utilities (spike-averaged): <b>'+fmt(annualUtils)+'</b><br>Include-path net: <b>'+fmt(includeAbs)+'</b> · RUBS net: <b>'+fmt(rubsAbs2)+'</b> · Tenant-pays net: <b>'+fmt(tenantAbsClean)+'</b><br>Turnover saved by longer stays (include): <b>'+fmt(turnSaved)+'</b></p>';
+ let h='<table><tr><th>Path</th><th>Annual net</th><th>Per unit / mo</th></tr>'; paths.forEach(p=>{h+='<tr><td>'+p[0]+'</td><td>'+fmt(p[1])+'</td><td>'+fmt(p[1]/v.units/12)+'</td></tr>'}); h+='</table>'; $('tableWrap').innerHTML=h;
+ let s='<table><tr><th>Included premium</th><th>Include-path net</th></tr>'; [0,50,100,150,200,250].forEach(p=>{s+='<tr><td>$'+p+'</td><td>'+fmt(p*v.units*12-annualUtils+turnSaved)+'</td></tr>'}); s+='</table><p class="small">Break-even premium: <b>'+fmt(Math.max(0,(annualUtils-turnSaved)/(v.units*12)))+'/unit/mo</b> — charge less than that for “included” and you are subsidising showers.</p>'; $('sens').innerHTML=s;
+ $('summary').value='Utility Verdict — '+seal+': '+best[0]+' wins by '+fmt(gap)+'/yr. Utilities '+fmt(annualUtils)+'/yr, break-even included premium '+fmt(Math.max(0,(annualUtils-turnSaved)/(v.units*12)))+'/unit/mo.';
+ renderSaved();}
+function preset(i){const p=[[1400,2,420,30,90,4,10,1,50,3,1500,2],[1250,4,980,40,130,10,12,2,50,6,1200,4],[2100,1,310,45,100,0,0,0,50,0,2000,0]][i]; ['rent','units','utils','spike','premium','vacDays','admin','hours','rate','bad','turnover','stay'].forEach((k,j)=>$(k).value=p[j]); calc()}
+function saveCase(){const n=$('saveName').value||'Property'; const all=JSON.parse(localStorage.getItem('uv')||'[]'); all.push({n,t:$('summary').value}); localStorage.setItem('uv',JSON.stringify(all)); renderSaved()}
+function renderSaved(){const all=JSON.parse(localStorage.getItem('uv')||'[]'); $('saved').innerHTML=all.map((x,i)=>x.n+': '+x.t+' <a href="#" onclick="delCase('+i+');return false">delete</a>').join('<br>')}
+function delCase(i){const all=JSON.parse(localStorage.getItem('uv')||'[]'); all.splice(i,1); localStorage.setItem('uv',JSON.stringify(all)); renderSaved()}
+function copySummary(){$('summary').select(); document.execCommand('copy')}
+calc();
+</script></body></html>
